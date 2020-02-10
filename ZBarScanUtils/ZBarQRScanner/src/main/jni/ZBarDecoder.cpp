@@ -1,5 +1,5 @@
 //
-// Created by 18081333 on 2020/1/14.
+// Created by XuYanjun on 2020/1/14.
 //
 
 #include "ZBarDecoder.h"
@@ -8,7 +8,7 @@ zbar_image_scanner_t *zscn = 0;
 
 static JNINativeMethod gMethods[] = {
         {"init",         "()I",                   (void *) init},
-        {"scanImage",    "([BII)I",               (void *) scanImage},
+        {"scanImage",    "([BIIIIII)I",           (void *) scanImage},
         {"obtainResult", "()[Ljava/lang/String;", (void *) obtainResult},
         {"obtainType",   "()I",                   (void *) obtainType},
         {"destroy",      "()V",                   (void *) destroy},
@@ -58,7 +58,15 @@ int init(JNIEnv *env, jobject obj) {
     return 1;
 }
 
-int scanImage(JNIEnv *env, jobject obj, jbyteArray jbytes, jint width, jint height) {
+#define VALIDATE_CROP(u, m) \
+    if((u) < 0) {           \
+        (m) += (u);         \
+        (u) = 0;            \
+    }
+
+int scanImage(JNIEnv *env, jobject obj,
+              jbyteArray jbytes, jint width, jint height,
+              jint cropX, jint cropY, jint cropWidth, jint cropHeight) {
     results.clear();
     // 创建Image
     zbar_image_t *zimg = zbar_image_create();
@@ -71,6 +79,13 @@ int scanImage(JNIEnv *env, jobject obj, jbyteArray jbytes, jint width, jint heig
     if (width < 0) width = 0;
     if (height < 0) height = 0;
     zbar_image_set_size(zimg, static_cast<unsigned int>(width), static_cast<unsigned int>(height));
+
+    // 设置裁剪区域
+    if (!(cropX == 0 && cropY == 0 && cropWidth == width && cropHeight == height)) {
+        VALIDATE_CROP(cropX,cropWidth)
+        VALIDATE_CROP(cropY,cropHeight)
+        zbar_image_set_crop(zimg, cropX, cropY, cropWidth, cropHeight);
+    }
 
     // 设置格式，这里固定死为 Y800，即灰度图
     const char *format = "Y800";
@@ -90,7 +105,7 @@ int scanImage(JNIEnv *env, jobject obj, jbyteArray jbytes, jint width, jint heig
         rawlen = env->GetArrayLength(jbytes);
     }
     zbar_image_set_data(zimg, raw, static_cast<unsigned long>(rawlen), Image_cleanupByteArray);
-    zbar_image_set_userdata(zimg, env->NewGlobalRef(jbytes));
+    //zbar_image_set_userdata(zimg, env->NewGlobalRef(jbytes));
 
     // 设置为数据，开始检测
     if (zscn != 0) {
@@ -155,5 +170,7 @@ jint obtainType(JNIEnv *env, jobject obj) {
 }
 
 void destroy(JNIEnv *env, jobject obj) {
-
+    if (zscn) {
+        zbar_image_scanner_destroy(zscn);
+    }
 }

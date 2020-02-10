@@ -65,6 +65,6 @@ target_link_libraries(
 
         ${stdc++-lib}
         ${log-lib}
-        ${z-lib}
-        ${jnigraphics-lib}
+#        ${z-lib}
+#        ${jnigraphics-lib}
 )

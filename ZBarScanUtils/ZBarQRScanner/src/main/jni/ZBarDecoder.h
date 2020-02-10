@@ -21,10 +21,10 @@ using namespace zbar;
 
 static JavaVM *jvm = NULL;
 
-struct ScanResult{
+typedef struct ScanResult {
     int type;
-    const char * data;
-};
+    const char *data;
+} ScanResult;
 
 std::vector<ScanResult> results;
 
@@ -43,7 +43,7 @@ static inline void throw_exc(JNIEnv *env, const char *name, const char *msg) {
 // TODO 待确认正确性，释放图像数据的，防止内存泄漏，尝试使用 lambda 表达式解决
 static void
 Image_cleanupByteArray(zbar_image_t *zimg) {
-    jobject data = static_cast<jobject>(zbar_image_get_userdata(zimg));
+    /*jobject data = static_cast<jobject>(zbar_image_get_userdata(zimg));
     assert(data);
 
     JNIEnv *env = NULL;
@@ -53,21 +53,23 @@ Image_cleanupByteArray(zbar_image_t *zimg) {
     if (env && data) {
         void *raw = (void *) zbar_image_get_data(zimg);
         assert(raw);
-        /* const image data is unchanged - abort copy back */
+        *//* const image data is unchanged - abort copy back *//*
         env->ReleaseByteArrayElements(static_cast<jbyteArray>(data), static_cast<jbyte *>(raw), JNI_ABORT);
         env->DeleteGlobalRef(data);
         zbar_image_set_userdata(zimg, NULL);
-    }
+    }*/
 }
 
 
 JNIEXPORT int init(JNIEnv *env, jobject obj);
 
-JNIEXPORT int scanImage(JNIEnv *env, jobject obj, jbyteArray jbytes, jint width, jint height);
+JNIEXPORT int scanImage(JNIEnv *env, jobject obj,
+                        jbyteArray jbytes, jint width, jint height,
+                        jint cropX, jint cropY, jint cropWidth, jint cropHeight);
 
 JNIEXPORT jobjectArray obtainResult(JNIEnv *env, jobject obj);
-JNIEXPORT jint obtainType(JNIEnv *env,jobject obj);
-JNIEXPORT void destroy(JNIEnv *env,jobject obj);
+JNIEXPORT jint obtainType(JNIEnv *env, jobject obj);
+JNIEXPORT void destroy(JNIEnv *env, jobject obj);
 
 void obtainScanData(const zbar_symbol_t *zsym);
 
